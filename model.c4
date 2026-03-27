@@ -1,0 +1,162 @@
+specification {
+  element queue {
+    style {
+      color red
+    }
+  }
+  element cronJob {
+    style {
+      color green
+    }
+  }
+  element user
+  element system
+  element service
+  element database
+  element restAPI
+  element backend
+  element component
+
+}
+
+model {
+   cronJob = cronJob 'Cron Job' {
+     description "
+        A cron job that triggers tasks at scheduled intervals."
+        style {
+            shape rectangle
+        }
+   }
+
+   user = user 'User' {
+    description '
+    A user who interacts with the system.'
+    style {
+        shape person
+    }
+   }
+
+   system = system 'System' {
+
+    restAPI graphql 'Internal GraphQL API' {
+     description "
+        Exposes a GraphQL API for clients to interact with the system."
+   }
+    
+   backend = backend 'Backend Services' {
+     style {
+        opacity 40%
+     }
+        component teams 'Teams' {
+            description '
+            Teams service that handles logic related to Microsoft Teams interactions.'
+
+        component drive 'OneDrive' {
+                description '
+                Microsoft OneDrive service for file storage and sharing.'
+        }
+    }
+
+        component outlook 'Outlook' {
+            description '
+            Outlook service that manages email and calendar interactions.'
+    }
+
+
+    graphql -> teams 'Calls'
+    graphql -> outlook 'Calls'
+    graphql -> drive 'Calls'
+
+  }
+
+    database database 'Database' {
+        style {
+            shape storage
+        }
+        description '
+        A database that stores data for the system.'
+    }
+
+    component queue 'Job Queue' {
+        style {
+            shape queue
+        }
+        description "
+        A queue that holds tasks to be processed by the system."
+    }
+   }
+
+   microsoft = system 'Microsoft m365 API' {
+    description '
+    Microsoft 365 API for accessing various Microsoft services.'
+     style {
+        shape browser
+     }
+    }
+
+    drive -> queue 'Enqueue tasks'
+    outlook -> microsoft 'HTTP requests'
+    microsoft -> outlook 'HTTP responses'
+    cronJob -> graphql 'Start job'
+    cronJob -> system 'Start job'
+    teams -> database 'Read/write data'
+    system -> microsoft 'HTTP requests'
+    queue -> microsoft 'HTTP requests'
+    microsoft -> teams 'HTTP responses'
+    user -> graphql 'Interacts with API'
+    graphql -> user 'Sends responses'
+}
+
+views {
+
+    view index {
+        title 'Landscape view'
+
+        include *
+    }
+
+
+    view system of system {
+        include *,
+        backend.*
+       
+        style * {
+        opacity 25%
+        }
+        style cronJob {
+        color muted
+        }
+        style user {
+        color muted
+        }
+        style microsoft
+        {
+        color muted
+        }
+  }
+
+    view team of teams {
+        include *
+
+        style * {
+            opacity 25%
+        }
+        style graphql {
+            color muted
+        }
+        style queue {
+            color muted
+        }
+    }
+
+    view microsoft of microsoft {
+        include *
+
+        style * {
+            opacity 25%
+        }
+        style system {
+            color muted
+        }
+    }
+}
