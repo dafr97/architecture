@@ -1,0 +1,47 @@
+views {
+
+    view index {
+        title 'Landscape view'
+
+        include *,
+
+    }
+
+
+    view system of system {
+        include *,
+        backend.*,
+        users,
+        teams,
+        cronJob,
+        queue,
+        m365
+
+        style * {
+        opacity 25%
+        }
+        style user {
+        color muted
+        }
+  }
+
+    view of system.backend.teams {
+        include *
+
+        style * {
+            opacity 25%
+        }
+        style system.graphql {
+            color muted
+        }
+      
+    }
+
+    view of system.backend.users {
+        include *
+
+        style * {
+            opacity 25%
+        }
+    }
+}

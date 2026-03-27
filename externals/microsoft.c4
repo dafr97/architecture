@@ -1,0 +1,9 @@
+model {
+    m365 = external 'Microsoft 365' {
+        description '
+        Microsoft 365 suite of applications and services.'
+        technology 'Microsoft 365 API'
+        icon tech:microsoft
+        link https://developer.microsoft.com/en-us/graph/graph-explorer
+    }
+}

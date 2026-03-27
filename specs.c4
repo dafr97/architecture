@@ -1,0 +1,42 @@
+specification {
+  element queue {
+    style {
+      color red
+    }
+  }
+  element cronJob {
+    style {
+      color green
+    }
+  }
+  element users
+  element teams
+  element user
+  element system
+  element service
+  element database
+  element restAPI
+  element backend
+  element component
+  element autoReply
+  element presence
+  element external {
+    style {
+      color slate
+      shape browser
+      
+    }
+  }
+
+  relationship MSSQL {
+    technology 'SQL'
+  }
+
+  relationship GET {
+    technology 'HTTP'
+  }
+
+  relationship POST {
+    technology 'HTTP'
+  }
+}

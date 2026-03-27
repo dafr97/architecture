@@ -1,32 +1,5 @@
-specification {
-  element queue {
-    style {
-      color red
-    }
-  }
-  element cronJob {
-    style {
-      color green
-    }
-  }
-  element user
-  element system
-  element service
-  element database
-  element restAPI
-  element backend
-  element component
-
-}
-
 model {
-   cronJob = cronJob 'Cron Job' {
-     description "
-        A cron job that triggers tasks at scheduled intervals."
-        style {
-            shape rectangle
-        }
-   }
+ 
 
    user = user 'User' {
     description '
@@ -37,19 +10,34 @@ model {
    }
 
    system = system 'System' {
+    icon gcp:cloud-deployment-manager
 
-    restAPI graphql 'Internal GraphQL API' {
+    cronJob = cronJob 'Cron Job' {
+    technology 'Cron'
+    link https://www.npmjs.com/package/cron
      description "
-        Exposes a GraphQL API for clients to interact with the system."
+        A cron job that triggers tasks at scheduled intervals. \n
+         - Updating groups every hour \n
+         - Updating folders and files every second hour"
+        icon gcp:cloud-scheduler
+   }
+
+    graphql = restAPI 'Internal GraphQL API' {
+        icon gcp:api
+        technology 'GraphQL'
+        description "
+            Exposes a GraphQL API for clients to interact with the system."
    }
     
    backend = backend 'Backend Services' {
      style {
         opacity 40%
      }
-        component teams 'Teams' {
+        teams = teams 'Teams' {
+            technology 'Node.js'
+            icon gcp:filestore
             description '
-            Teams service that handles logic related to Microsoft Teams interactions.'
+            Teams service that handles logic related to Microsoft Teams and SharePoint interactions.'
 
         component drive 'OneDrive' {
                 description '
@@ -57,28 +45,46 @@ model {
         }
     }
 
-        component outlook 'Outlook' {
+        users = users 'User Management' {
+            technology 'Node.js'
+            icon gcp:user-preferences
             description '
-            Outlook service that manages email and calendar interactions.'
+            User service that manages user interactions and data.'
+            
+
+            component autoReply "Auto Reply Service" {
+                description '
+                A service that automatically replies to messages based on predefined rules.'
+            }
+
+            component presence "Presence Service" {
+                description '
+                A service that tracks user presence and availability.'
+            }
     }
 
 
-    graphql -> teams 'Calls'
-    graphql -> outlook 'Calls'
-    graphql -> drive 'Calls'
+  
+    graphql -> autoReply 'Trigger Auto Replies'
+    graphql -> presence 'Trigger Presence Updates'
+    graphql -> drive 'Trigger Drive Operations'
 
   }
 
     database database 'Database' {
+        icon bootstrap:database
+        technology 'MSSQL'
         style {
+            color indigo
             shape storage
         }
-        description '
-        A database that stores data for the system.'
     }
 
     component queue 'Job Queue' {
+        icon gcp:batch
+        technology 'Redis'
         style {
+            color red
             shape queue
         }
         description "
@@ -86,77 +92,12 @@ model {
     }
    }
 
-   microsoft = system 'Microsoft m365 API' {
-    description '
-    Microsoft 365 API for accessing various Microsoft services.'
-     style {
-        shape browser
-     }
-    }
-
+    autoReply -[GET]-> m365 'uses'
+    presence -[GET]-> m365 'uses'
     drive -> queue 'Enqueue tasks'
-    outlook -> microsoft 'HTTP requests'
-    microsoft -> outlook 'HTTP responses'
-    cronJob -> graphql 'Start job'
-    cronJob -> system 'Start job'
-    teams -> database 'Read/write data'
-    system -> microsoft 'HTTP requests'
-    queue -> microsoft 'HTTP requests'
-    microsoft -> teams 'HTTP responses'
-    user -> graphql 'Interacts with API'
-    graphql -> user 'Sends responses'
-}
-
-views {
-
-    view index {
-        title 'Landscape view'
-
-        include *
-    }
-
-
-    view system of system {
-        include *,
-        backend.*
-       
-        style * {
-        opacity 25%
-        }
-        style cronJob {
-        color muted
-        }
-        style user {
-        color muted
-        }
-        style microsoft
-        {
-        color muted
-        }
-  }
-
-    view team of teams {
-        include *
-
-        style * {
-            opacity 25%
-        }
-        style graphql {
-            color muted
-        }
-        style queue {
-            color muted
-        }
-    }
-
-    view microsoft of microsoft {
-        include *
-
-        style * {
-            opacity 25%
-        }
-        style system {
-            color muted
-        }
-    }
+    cronJob -> graphql 'Run periodic tasks'
+    queue -[GET]-> m365 'Triggers scheduled tasks'
+    drive -[MSSQL]-> database 'Reads/Writes'
+    user -[GET]-> graphql 'Interacts with API'
+ 
 }
