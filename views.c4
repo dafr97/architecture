@@ -12,7 +12,6 @@ views {
     teams,
     cronJob,
     jobQueue,
-    responseCache,
     m365
 
     style * {
@@ -94,24 +93,6 @@ views {
     }
     style m365.azureAD {
       color blue
-    }
-  }
-
-  view cacheStrategy {
-    title 'Redis Cache Strategy'
-    include
-      system.graphql,
-      system.responseCache,
-      system.backend.users.autoReply,
-      system.backend.users.presence,
-      system.backend.teams.groupService,
-      m365.graphAPI
-
-    style * {
-      opacity 25%
-    }
-    style system.responseCache {
-      color amber
     }
   }
 
