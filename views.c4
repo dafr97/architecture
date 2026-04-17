@@ -1,47 +1,118 @@
 views {
 
-    view index {
-        title 'Landscape view'
-
-        include *,
-
-    }
-
-
-    view system of system {
-        include *,
-        backend.*,
-        users,
-        teams,
-        cronJob,
-        queue,
-        m365
-
-        style * {
-        opacity 25%
-        }
-        style user {
-        color muted
-        }
+  view index {
+    title 'Landscape view'
+    include *,
   }
 
-    view of system.backend.teams {
-        include *
+  view system of system {
+    include *,
+    backend.*,
+    users,
+    teams,
+    cronJob,
+    jobQueue,
+    responseCache,
+    m365
 
-        style * {
-            opacity 25%
-        }
-        style system.graphql {
-            color muted
-        }
-      
+    style * {
+      opacity 25%
     }
-
-    view of system.backend.users {
-        include *
-
-        style * {
-            opacity 25%
-        }
+    style user {
+      color muted
     }
+  }
+
+  view of system.backend.teams {
+    include *
+
+    style * {
+      opacity 25%
+    }
+    style system.graphql {
+      color muted
+    }
+  }
+
+  view of system.backend.users {
+    include *
+
+    style * {
+      opacity 25%
+    }
+  }
+
+  view deltaSyncFlow {
+    title 'Delta Sync Data Flow'
+    include
+      system.cronJob,
+      system.graphql,
+      system.backend.teams.drive,
+      system.backend.teams.queueService,
+      system.jobQueue,
+      system.deltaWorker,
+      system.backend.repositories.driveRepo,
+      system.backend.repositories.folderRepo,
+      system.backend.repositories.fileRepo,
+      system.backend.repositories.groupRepo,
+      m365.sharepointDrive,
+      system.msalAuth,
+      m365.azureAD,
+      system.database
+
+    style * {
+      opacity 25%
+    }
+    style system.jobQueue {
+      color red
+    }
+    style system.deltaWorker {
+      color green
+    }
+    style system.msalAuth {
+      color blue
+    }
+  }
+
+  view authFlow {
+    title 'Authentication Flow (MSAL)'
+    include
+      system.msalAuth,
+      m365.azureAD,
+      system.backend.users.autoReply,
+      system.backend.users.presence,
+      system.backend.users.userService,
+      system.backend.teams.groupService,
+      system.backend.teams.drive,
+      system.deltaWorker
+
+    style * {
+      opacity 25%
+    }
+    style system.msalAuth {
+      color blue
+    }
+    style m365.azureAD {
+      color blue
+    }
+  }
+
+  view cacheStrategy {
+    title 'Redis Cache Strategy'
+    include
+      system.graphql,
+      system.responseCache,
+      system.backend.users.autoReply,
+      system.backend.users.presence,
+      system.backend.teams.groupService,
+      m365.graphAPI
+
+    style * {
+      opacity 25%
+    }
+    style system.responseCache {
+      color amber
+    }
+  }
+
 }
