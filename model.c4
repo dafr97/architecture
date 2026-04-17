@@ -47,18 +47,6 @@ model {
       Holds delta-sync jobs for team drive processing."
     }
 
-    responseCache = cache 'Response Cache' {
-      icon gcp:memorystore
-      technology 'Redis / ioredis'
-      style {
-        color amber
-        shape storage
-      }
-      description "
-      Caches expensive MS Graph responses with TTL strategy.
-      Reduces repeated API calls for groups, users, drives."
-    }
-
     deltaWorker = worker 'Delta Sync Worker' {
       icon gcp:batch
       technology 'BullMQ Worker'
@@ -86,7 +74,7 @@ model {
 
         component drive 'Drive Service' {
           description '
-          Fetches SharePoint drive items. Enqueues delta-sync jobs to BullMQ.'
+          Fetches SharePoint drive items and delegates enqueue to Queue Service.'
         }
 
         component queueService 'Queue Service' {
@@ -161,10 +149,10 @@ model {
     graphql -> presence 'Trigger Presence Updates'
     graphql -> drive 'Trigger Drive Operations'
     graphql -> groupService 'Trigger Group Sync'
-    graphql -[CACHE_READ]-> responseCache 'Read cached response'
 
-    drive -[ASYNC]-> jobQueue 'Enqueue delta-sync tasks'
     drive -> queueService 'Delegate enqueue'
+    drive -> msalAuth 'Acquire token'
+    queueService -[ASYNC]-> jobQueue 'Enqueue delta-sync jobs'
 
     jobQueue -> deltaWorker 'Dispatch delta-sync jobs'
 
@@ -183,10 +171,6 @@ model {
     userService -> msalAuth 'Acquire token'
 
     repositories -[MSSQL]-> database 'SQL queries via Prisma'
-
-    autoReply -[CACHE_WRITE]-> responseCache 'Cache Graph response'
-    presence -[CACHE_WRITE]-> responseCache 'Cache Graph response'
-    groupService -[CACHE_WRITE]-> responseCache 'Cache Graph response'
   }
 
   // External relationships
@@ -194,6 +178,7 @@ model {
   presence -[GET]-> m365.presenceAPI 'Fetch user presence'
   groupService -[GET]-> m365.teamsGroups 'Fetch groups delta'
   userService -[GET]-> m365.graphAPI 'Fetch user data'
+  drive -[GET]-> m365.sharepointDrive 'Fetch drive items'
   msalAuth -[OAUTH2]-> m365.azureAD 'Client credentials token exchange'
 
   cronJob -> graphql 'Run periodic tasks'
