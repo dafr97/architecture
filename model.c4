@@ -1,103 +1,202 @@
 model {
- 
 
-   user = user 'User' {
+  user = user 'User' {
     description '
     A user who interacts with the system.'
     style {
-        shape person
+      shape person
     }
-   }
+  }
 
-   system = system 'System' {
+  system = system 'System' {
     icon gcp:cloud-deployment-manager
 
     cronJob = cronJob 'Cron Job' {
-    technology 'Cron'
-    link https://www.npmjs.com/package/cron
-     description "
+      technology 'Cron'
+      link https://www.npmjs.com/package/cron
+      description "
         A cron job that triggers tasks at scheduled intervals. \n
          - Updating groups every hour \n
          - Updating folders and files every second hour"
-        icon gcp:cloud-scheduler
-   }
+      icon gcp:cloud-scheduler
+    }
 
     graphql = restAPI 'Internal GraphQL API' {
-        icon gcp:api
-        technology 'GraphQL'
-        description "
-            Exposes a GraphQL API for clients to interact with the system."
-   }
-    
-   backend = backend 'Backend Services' {
-     style {
+      icon gcp:api
+      technology 'GraphQL'
+      description "
+        Exposes a GraphQL API for clients to interact with the system."
+    }
+
+    msalAuth = component 'MSAL Auth' {
+      technology 'MSAL Node / Azure AD'
+      icon azure:active-directory
+      description '
+      Acquires app-only access tokens via client credentials flow.
+      Scopes: https://graph.microsoft.com/.default'
+    }
+
+    jobQueue = queue 'Job Queue' {
+      icon gcp:batch
+      technology 'BullMQ / Redis'
+      style {
+        color red
+        shape queue
+      }
+      description "
+      Holds delta-sync jobs for team drive processing."
+    }
+
+    responseCache = cache 'Response Cache' {
+      icon gcp:memorystore
+      technology 'Redis / ioredis'
+      style {
+        color amber
+        shape storage
+      }
+      description "
+      Caches expensive MS Graph responses with TTL strategy.
+      Reduces repeated API calls for groups, users, drives."
+    }
+
+    deltaWorker = worker 'Delta Sync Worker' {
+      icon gcp:batch
+      technology 'BullMQ Worker'
+      description '
+      Processes delta-sync jobs with concurrency 3.
+      Paginates @odata.nextLink, persists delta tokens,
+      bulk-upserts folders and files into the database.'
+    }
+
+    backend = backend 'Backend Services' {
+      style {
         opacity 40%
-     }
-        teams = teams 'Teams' {
-            technology 'Node.js'
-            icon gcp:filestore
-            description '
-            Teams service that handles logic related to Microsoft Teams and SharePoint interactions.'
+      }
 
-        component drive 'OneDrive' {
-                description '
-                Microsoft OneDrive service for file storage and sharing.'
+      teams = teams 'Teams' {
+        technology 'Node.js'
+        icon gcp:filestore
+        description '
+        Teams service that handles logic related to Microsoft Teams and SharePoint interactions.'
+
+        component groupService 'Group Service' {
+          description '
+          Fetches M365 Groups via delta queries. Persists delta tokens.'
         }
+
+        component drive 'Drive Service' {
+          description '
+          Fetches SharePoint drive items. Enqueues delta-sync jobs to BullMQ.'
+        }
+
+        component queueService 'Queue Service' {
+          description '
+          Wraps BullMQ — enqueues and manages job lifecycle for drive delta syncs.'
+        }
+      }
+
+      users = users 'User Management' {
+        technology 'Node.js'
+        icon gcp:user-preferences
+        description '
+        User service that manages user interactions and data.'
+
+        component autoReply 'MailBox / Auto-Reply Service' {
+          description '
+          Reads and updates mailboxSettings auto-reply rules via MS Graph.'
+        }
+
+        component presence 'Presence Service' {
+          description '
+          Fetches user presence and availability status from MS Graph.'
+        }
+
+        component userService 'User Service' {
+          description '
+          Core user data lookups from MS Graph.'
+        }
+      }
+
+      repositories = repository 'Repository Layer' {
+        technology 'Prisma ORM'
+        icon bootstrap:database
+        description '
+        Data access layer. Never called directly from resolvers.
+        Includes: FolderDatabaseRepository, GroupDatabaseRepository,
+        FileDatabaseRepository, DriveRepository.'
+
+        component folderRepo 'Folder Repository' {
+          technology 'Prisma'
+          description 'Bulk upserts and reads for folder records.'
+        }
+
+        component groupRepo 'Group Repository' {
+          technology 'Prisma'
+          description 'Group status updates and delta token persistence.'
+        }
+
+        component fileRepo 'File Repository' {
+          technology 'Prisma'
+          description 'Bulk upserts and reads for file records.'
+        }
+
+        component driveRepo 'Drive Repository' {
+          technology 'Axios / MS Graph'
+          description 'Wraps MS Graph drive delta API calls.'
+        }
+      }
     }
 
-        users = users 'User Management' {
-            technology 'Node.js'
-            icon gcp:user-preferences
-            description '
-            User service that manages user interactions and data.'
-            
-
-            component autoReply "Auto Reply Service" {
-                description '
-                A service that automatically replies to messages based on predefined rules.'
-            }
-
-            component presence "Presence Service" {
-                description '
-                A service that tracks user presence and availability.'
-            }
+    database database 'Database' {
+      icon bootstrap:database
+      technology 'MSSQL'
+      style {
+        color indigo
+        shape storage
+      }
     }
 
-
-  
+    // Internal relationships
     graphql -> autoReply 'Trigger Auto Replies'
     graphql -> presence 'Trigger Presence Updates'
     graphql -> drive 'Trigger Drive Operations'
+    graphql -> groupService 'Trigger Group Sync'
+    graphql -[CACHE_READ]-> responseCache 'Read cached response'
 
+    drive -[ASYNC]-> jobQueue 'Enqueue delta-sync tasks'
+    drive -> queueService 'Delegate enqueue'
+
+    jobQueue -> deltaWorker 'Dispatch delta-sync jobs'
+
+    deltaWorker -> folderRepo 'Bulk upsert folders'
+    deltaWorker -> fileRepo 'Bulk upsert files'
+    deltaWorker -> groupRepo 'Update sync status & delta token'
+    deltaWorker -[DELTA]-> driveRepo 'Paginate drive delta'
+    deltaWorker -[OAUTH2]-> msalAuth 'Acquire token'
+
+    driveRepo -[DELTA]-> m365.sharepointDrive 'getDriveDelta / getDriveDeltaAbsolute'
+
+    groupService -> groupRepo 'Read/write groups'
+    autoReply -> msalAuth 'Acquire token'
+    presence -> msalAuth 'Acquire token'
+    groupService -> msalAuth 'Acquire token'
+    userService -> msalAuth 'Acquire token'
+
+    repositories -[MSSQL]-> database 'SQL queries via Prisma'
+
+    autoReply -[CACHE_WRITE]-> responseCache 'Cache Graph response'
+    presence -[CACHE_WRITE]-> responseCache 'Cache Graph response'
+    groupService -[CACHE_WRITE]-> responseCache 'Cache Graph response'
   }
 
-    database database 'Database' {
-        icon bootstrap:database
-        technology 'MSSQL'
-        style {
-            color indigo
-            shape storage
-        }
-    }
+  // External relationships
+  autoReply -[GET]-> m365.exchangeMailbox 'Read/write mailboxSettings'
+  presence -[GET]-> m365.presenceAPI 'Fetch user presence'
+  groupService -[GET]-> m365.teamsGroups 'Fetch groups delta'
+  userService -[GET]-> m365.graphAPI 'Fetch user data'
+  msalAuth -[OAUTH2]-> m365.azureAD 'Client credentials token exchange'
 
-    component queue 'Job Queue' {
-        icon gcp:batch
-        technology 'Redis'
-        style {
-            color red
-            shape queue
-        }
-        description "
-        A queue that holds tasks to be processed by the system."
-    }
-   }
+  cronJob -> graphql 'Run periodic tasks'
+  user -[GET]-> graphql 'Interacts with API'
 
-    autoReply -[GET]-> m365 'uses'
-    presence -[GET]-> m365 'uses'
-    drive -> queue 'Enqueue tasks'
-    cronJob -> graphql 'Run periodic tasks'
-    queue -[GET]-> m365 'Triggers scheduled tasks'
-    drive -[MSSQL]-> database 'Reads/Writes'
-    user -[GET]-> graphql 'Interacts with API'
- 
 }

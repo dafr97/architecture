@@ -20,11 +20,21 @@ specification {
   element component
   element autoReply
   element presence
+  element worker {
+    style {
+      color green
+    }
+  }
+  element cache {
+    style {
+      color amber
+    }
+  }
+  element repository
   element external {
     style {
       color slate
       shape browser
-      
     }
   }
 
@@ -38,5 +48,30 @@ specification {
 
   relationship POST {
     technology 'HTTP'
+  }
+
+  relationship ASYNC {
+    technology 'BullMQ'
+    color amber
+  }
+
+  relationship DELTA {
+    technology 'OData Delta'
+    color purple
+  }
+
+  relationship OAUTH2 {
+    technology 'MSAL / OAuth2'
+    color blue
+  }
+
+  relationship CACHE_READ {
+    technology 'Redis / ioredis'
+    color green
+  }
+
+  relationship CACHE_WRITE {
+    technology 'Redis / ioredis'
+    color green
   }
 }

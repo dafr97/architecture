@@ -2,8 +2,50 @@ model {
     m365 = external 'Microsoft 365' {
         description '
         Microsoft 365 suite of applications and services.'
-        technology 'Microsoft 365 API'
+        technology 'Microsoft Graph API'
         icon tech:microsoft
         link https://developer.microsoft.com/en-us/graph/graph-explorer
+
+        graphAPI = external 'Graph API Gateway' {
+            technology 'REST / OData'
+            icon gcp:api
+            description '
+            Central entry point for all MS Graph calls.'
+        }
+
+        sharepointDrive = external 'SharePoint / OneDrive' {
+            technology 'Microsoft Graph – Drives'
+            icon tech:microsoft
+            description '
+            Drive items, delta sync, folders and files.'
+        }
+
+        teamsGroups = external 'Teams & Groups' {
+            technology 'Microsoft Graph – Groups'
+            icon tech:microsoft
+            description '
+            M365 Groups, delta tokens, membership.'
+        }
+
+        exchangeMailbox = external 'Exchange Mailbox' {
+            technology 'Microsoft Graph – Mail'
+            icon tech:microsoft
+            description '
+            Auto-reply (mailboxSettings), mailbox queries.'
+        }
+
+        presenceAPI = external 'Presence' {
+            technology 'Microsoft Graph – Presence'
+            icon tech:microsoft
+            description '
+            User availability and activity status.'
+        }
+
+        azureAD = external 'Azure AD' {
+            technology 'MSAL / OAuth2'
+            icon azure:active-directory
+            description '
+            Issues access tokens for app-only auth.'
+        }
     }
 }
