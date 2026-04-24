@@ -79,16 +79,46 @@ model {
         component groupService 'Group Service' {
           description '
           Fetches M365 Groups via delta queries. Persists delta tokens.'
+
+          component getAllGroups 'Get All Groups' {
+            description 'Full paginated sync of M365 groups with batch drive fetching and delta token persistence.'
+          }
+          component getGroupsDelta 'Get Groups Delta' {
+            description 'Incremental delta sync using stored delta token — processes new, updated and removed groups.'
+          }
         }
 
         component drive 'Drive Service' {
           description '
           Fetches SharePoint drive items and delegates enqueue to Queue Service.'
+
+          component getDeltaForDrive 'Get Delta For Drive' {
+            description 'Queue initial delta sync for teams with pending or failed status.'
+          }
+          component updateTeamsWithDeltaToken 'Update Teams With Delta Token' {
+            description 'Queue incremental delta sync for teams that already have a delta token.'
+          }
         }
 
         component queueService 'Queue Service' {
           description '
           Wraps BullMQ — enqueues and manages job lifecycle for drive delta syncs.'
+
+          component stopQueue 'Stop Queue' {
+            description 'Pause workers and clear all queued jobs.'
+          }
+          component startQueue 'Start Queue' {
+            description 'Resume paused workers.'
+          }
+          component getQueueStatus 'Get Status' {
+            description 'Return current queue job counts (waiting, active, completed, failed).'
+          }
+          component getFailedJobs 'Get Failed Jobs' {
+            description 'List failed jobs with error details and stack traces.'
+          }
+          component clearFailedJobs 'Clear Failed Jobs' {
+            description 'Remove all failed jobs from the queue.'
+          }
         }
       }
 
@@ -101,11 +131,25 @@ model {
         component mailBox 'MailBox Service' {
           description '
           Reads and updates mailboxSettings auto-reply rules via MS Graph.'
+
+          component getAutoReplySetting 'Get Auto Reply Setting' {
+            description 'Fetch auto-reply settings for specific users from MS Graph.'
+          }
+          component getAllAutoReplies 'Get All Auto Replies' {
+            description 'Batch fetch auto-reply for all users with throttling, filter alwaysEnabled, save to DB.'
+          }
+          component getAutoRepliesFromDb 'Get Auto Replies From DB' {
+            description 'Read stored auto-reply records from local database (no Graph API call).'
+          }
         }
 
         component userService 'User Service' {
           description '
           Core user data lookups from MS Graph.'
+
+          component getUserPresence 'Get User Presence' {
+            description 'Resolve user email to ID via Graph, then fetch presence and availability status.'
+          }
         }
       }
 
