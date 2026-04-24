@@ -11,13 +11,22 @@ model {
   system = system 'System' {
     icon gcp:cloud-deployment-manager
 
-    cronJob = cronJob 'Cron Job' {
+    teamCron = cronJob 'Team Cron Job' {
       technology 'Cron'
       link https://www.npmjs.com/package/cron
       description "
-        A cron job that triggers tasks at scheduled intervals. \n
+        A cron job that triggers team-related sync tasks at scheduled intervals. \n
          - Updating groups every hour \n
          - Updating folders and files every second hour"
+      icon gcp:cloud-scheduler
+    }
+
+    userCron = cronJob 'User Cron Job' {
+      technology 'Cron'
+      link https://www.npmjs.com/package/cron
+      description "
+        A cron job that triggers user-related sync tasks at scheduled intervals. \n
+         - Syncing user data and mailbox settings periodically"
       icon gcp:cloud-scheduler
     }
 
@@ -89,14 +98,9 @@ model {
         description '
         User service that manages user interactions and data.'
 
-        component autoReply 'MailBox / Auto-Reply Service' {
+        component mailBox 'MailBox Service' {
           description '
           Reads and updates mailboxSettings auto-reply rules via MS Graph.'
-        }
-
-        component presence 'Presence Service' {
-          description '
-          Fetches user presence and availability status from MS Graph.'
         }
 
         component userService 'User Service' {
@@ -110,8 +114,8 @@ model {
         icon bootstrap:database
         description '
         Data access layer. Never called directly from resolvers.
-        Includes: FolderDatabaseRepository, GroupDatabaseRepository,
-        FileDatabaseRepository, DriveRepository.'
+        Includes: folderRepo, groupRepo, fileRepo, driveRepo,
+        mailBoxRepo, userRepo, autoReplyDbRepo.'
 
         component folderRepo 'Folder Repository' {
           technology 'Prisma'
@@ -132,6 +136,21 @@ model {
           technology 'Axios / MS Graph'
           description 'Wraps MS Graph drive delta API calls.'
         }
+
+        component mailBoxRepo 'MailBox Repository' {
+          technology 'Axios / MS Graph'
+          description 'Wraps MS Graph mailbox API calls.'
+        }
+
+        component userRepo 'User Repository' {
+          technology 'Axios / MS Graph'
+          description 'Wraps MS Graph user API calls.'
+        }
+
+        component autoReplyDbRepo 'AutoReply DB Repository' {
+          technology 'Prisma'
+          description 'Prisma DB operations for AutoReplies.'
+        }
       }
     }
 
@@ -145,8 +164,7 @@ model {
     }
 
     // Internal relationships
-    graphql -> autoReply 'Trigger Auto Replies'
-    graphql -> presence 'Trigger Presence Updates'
+    graphql -> mailBox 'Trigger MailBox Operations'
     graphql -> drive 'Trigger Drive Operations'
     graphql -> groupService 'Trigger Group Sync'
 
@@ -165,23 +183,25 @@ model {
     driveRepo -[DELTA]-> m365.sharepointDrive 'getDriveDelta / getDriveDeltaAbsolute'
 
     groupService -> groupRepo 'Read/write groups'
-    autoReply -> msalAuth 'Acquire token'
-    presence -> msalAuth 'Acquire token'
+    mailBox -> msalAuth 'Acquire token'
+    mailBox -> mailBoxRepo 'Read/write mailbox settings'
+    mailBox -> autoReplyDbRepo 'Persist auto-reply data'
     groupService -> msalAuth 'Acquire token'
     userService -> msalAuth 'Acquire token'
+    userService -> userRepo 'Read user data'
 
     repositories -[MSSQL]-> database 'SQL queries via Prisma'
   }
 
   // External relationships
-  autoReply -[GET]-> m365.exchangeMailbox 'Read/write mailboxSettings'
-  presence -[GET]-> m365.presenceAPI 'Fetch user presence'
+  mailBox -[GET]-> m365.exchangeMailbox 'Read/write mailboxSettings'
   groupService -[GET]-> m365.teamsGroups 'Fetch groups delta'
   userService -[GET]-> m365.graphAPI 'Fetch user data'
   drive -[GET]-> m365.sharepointDrive 'Fetch drive items'
   msalAuth -[OAUTH2]-> m365.azureAD 'Client credentials token exchange'
 
-  cronJob -> graphql 'Run periodic tasks'
+  teamCron -> graphql 'Run periodic team tasks'
+  userCron -> graphql 'Run periodic user tasks'
   user -[GET]-> graphql 'Interacts with API'
 
 }
