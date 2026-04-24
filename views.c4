@@ -10,7 +10,8 @@ views {
     backend.*,
     users,
     teams,
-    cronJob,
+    teamCron,
+    userCron,
     jobQueue,
     m365
 
@@ -44,7 +45,7 @@ views {
   view deltaSyncFlow {
     title 'Delta Sync Data Flow'
     include
-      system.cronJob,
+      system.teamCron,
       system.graphql,
       system.backend.teams.drive,
       system.backend.teams.queueService,
@@ -78,8 +79,7 @@ views {
     include
       system.msalAuth,
       m365.azureAD,
-      system.backend.users.autoReply,
-      system.backend.users.presence,
+      system.backend.users.mailBox,
       system.backend.users.userService,
       system.backend.teams.groupService,
       system.backend.teams.drive,

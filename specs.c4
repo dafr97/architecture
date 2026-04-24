@@ -18,8 +18,6 @@ specification {
   element restAPI
   element backend
   element component
-  element autoReply
-  element presence
   element worker {
     style {
       color green

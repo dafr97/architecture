@@ -34,13 +34,6 @@ model {
             Auto-reply (mailboxSettings), mailbox queries.'
         }
 
-        presenceAPI = external 'Presence' {
-            technology 'Microsoft Graph – Presence'
-            icon tech:microsoft
-            description '
-            User availability and activity status.'
-        }
-
         azureAD = external 'Azure AD' {
             technology 'MSAL / OAuth2'
             icon azure:active-directory
