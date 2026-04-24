@@ -34,12 +34,37 @@ views {
     }
   }
 
+  view of system.backend.teams.drive {
+    include *
+    style * { opacity 25% }
+  }
+
+  view of system.backend.teams.groupService {
+    include *
+    style * { opacity 25% }
+  }
+
+  view of system.backend.teams.queueService {
+    include *
+    style * { opacity 25% }
+  }
+
   view of system.backend.users {
     include *
 
     style * {
       opacity 25%
     }
+  }
+
+  view of system.backend.users.mailBox {
+    include *
+    style * { opacity 25% }
+  }
+
+  view of system.backend.users.userService {
+    include *
+    style * { opacity 25% }
   }
 
   view deltaSyncFlow {
