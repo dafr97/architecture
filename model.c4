@@ -114,9 +114,8 @@ model {
         icon bootstrap:database
         description '
         Data access layer. Never called directly from resolvers.
-        Includes: FolderDatabaseRepository, GroupDatabaseRepository,
-        FileDatabaseRepository, DriveRepository, mailBoxRepository,
-        userRepository, AutoReplyDatabaseRepository.'
+        Includes: folderRepo, groupRepo, fileRepo, driveRepo,
+        mailBoxRepo, userRepo, autoReplyDbRepo.'
 
         component folderRepo 'Folder Repository' {
           technology 'Prisma'
